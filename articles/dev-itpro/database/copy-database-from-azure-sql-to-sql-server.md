@@ -92,7 +92,7 @@ The values on the following pages are either environment-specific or encrypted i
 Because you must turn off change tracking and delete database users before you can export the source Azure SQL database, you should create a copy of that database. You can then work with the copy instead of deleting information from the original database. The following SQL statement creates a copy of the axdb\_mySourceDatabaseToCopy database and names it **MyNewCopy**. Edit this script so that it uses the names of your databases.
 
 ```
-CREATE DATABASE MyNewCopy AS COPY OF axdb_mySourceDatabaseToCopy
+CREATE DATABASE [MyNewCopy] AS COPY OF [axdb_mySourceDatabaseToCopy]
 ```
 
 This SQL statement runs asynchronously. In other words, although it appears to be completed after one minute, it actually continues to run in the background. For more information, see [CREATE DATABASE (Azure SQL Database)](https://msdn.microsoft.com/en-us/library/dn268335.aspx). To monitor the progress of the copy operation, run the following query against the MASTER database in the same instance.
@@ -115,7 +115,7 @@ declare
 @SQL varchar(1000)
 set quoted_identifier off
 declare changeTrackingCursor CURSOR for
-select 'ALTER TABLE ' + t.name + ' DISABLE CHANGE_TRACKING'
+select 'ALTER TABLE [' + t.name + '] DISABLE CHANGE_TRACKING'
 from sys.change_tracking_tables c, sys.tables t
 where t.object_id = c.object_id
 OPEN changeTrackingCursor
@@ -131,7 +131,7 @@ DEALLOCATE changeTrackingCursor
 --Disable change tracking on the database itself.
 ALTER DATABASE
 -- SET THE NAME OF YOUR DATABASE BELOW
-MyNewCopy
+[MyNewCopy]
 set CHANGE_TRACKING = OFF
 --Remove the database level users from the database
 --these will be recreated after importing in SQL Server.
@@ -139,7 +139,7 @@ declare
 @userSQL varchar(1000)
 set quoted_identifier off
 declare userCursor CURSOR for
-select 'DROP USER ' + name
+select 'DROP USER [' + name + ']' 
 from sys.sysusers
 where issqlrole = 0 and hasdbaccess = 1 and name <> 'dbo'
 OPEN userCursor
@@ -187,8 +187,12 @@ GO
 
 Open a **Command Prompt** window as an administrator, and run the following commands.
 
+Please note that SqlPackage.exe may be in an other folder than "140" on your system (depending on the latest version of SSMS).
+
+The following operation may run for more than an hour.
+
 ```
-cd C:\Program Files (x86)\Microsoft SQL Server\130\DAC\bin
+cd C:\Program Files (x86)\Microsoft SQL Server\140\DAC\bin
 
 SqlPackage.exe /a:export /ssn:<server>.database.windows.net /sdn:<database to export> /tf:D:\Exportedbacpac\my.bacpac /p:CommandTimeout=1200 /p:VerifyFullTextDocumentTypesSupported=false /sp:<SQL password> /su:<sql user>
 ```
@@ -216,8 +220,10 @@ When you import the database, we recommend that you follow these guidelines:
 
 To help guarantee the best performance, copy the \*.bacpac file to the local computer that you're importing from. Open a **Command Prompt** window as an administrator, and run the following commands.
 
+Please note that SqlPackage.exe may be in an other folder than "140" on your system (depending on the latest version of SSMS).
+
 ```
-cd C:\Program Files (x86)\Microsoft SQL Server\130\DAC\bin
+cd C:\Program Files (x86)\Microsoft SQL Server\140\DAC\bin
 
 SqlPackage.exe /a:import /sf:D:\Exportedbacpac\my.bacpac /tsn:localhost /tdn:<target database name> /p:CommandTimeout=1200
 ```
